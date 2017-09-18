@@ -23,3 +23,15 @@ It handles a JSON request then query a Springboot SOAP WS to return a country in
 }
 ```
 ----------
+
+How to start
+-------------
+
+Run the Springboot jar
+> java -jar gs-producing-web-service-0.1.0.jar
+
+Run the main go
+> go get sessiontechniquegolang.go
+> go run sessiontechniquegolang.go
+
+Launch a request (with Postman for example) and you're good to go !!
