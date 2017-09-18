@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"encoding/xml"
 	"fmt"
 	"log"
 	"net/http"
@@ -31,6 +32,7 @@ type Addresse struct {
 // GetPersonneEndpoint endpoint pour retourner une personne identifiée par un Id
 func GetPersonneEndpoint(w http.ResponseWriter, req *http.Request) {
 	params := mux.Vars(req)
+	w.Header().Set("Content-Type", "application/json")
 	for _, item := range gens {
 		if item.ID == params["id"] {
 			json.NewEncoder(w).Encode(item)
@@ -42,6 +44,7 @@ func GetPersonneEndpoint(w http.ResponseWriter, req *http.Request) {
 
 // GetGensEndpoint endpoint pour retourner la liste des personnes
 func GetGensEndpoint(w http.ResponseWriter, req *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(gens)
 }
 
@@ -49,9 +52,10 @@ func GetGensEndpoint(w http.ResponseWriter, req *http.Request) {
 func CreatePersonneEndpoint(w http.ResponseWriter, req *http.Request) {
 	params := mux.Vars(req)
 	var personne Personne
-	_ = json.NewDecoder(req.Body).Decode(&personne)
+	json.NewDecoder(req.Body).Decode(&personne)
 	personne.ID = params["id"]
 	gens = append(gens, personne)
+	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(gens)
 }
 
@@ -64,10 +68,40 @@ func DeletePersonneEndpoint(w http.ResponseWriter, req *http.Request) {
 			break
 		}
 	}
+	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(gens)
 }
 
-// Pays object décrivant un pays
+// QueryData argument du template SOAP
+type QueryData struct {
+	Country string
+}
+
+// MyRespEnvelope enveloppe de la réponse
+type MyRespEnvelope struct {
+	XMLName xml.Name
+	Body    Body
+	Header  Header
+}
+
+// Body body de la réponse
+type Body struct {
+	XMLName     xml.Name
+	GetResponse completeResponse `xml:"getCountryResponse" json:"getCountryResponse"`
+}
+
+// Header header de la réponse
+type Header struct {
+	XMLName xml.Name
+}
+
+// completeResponse object pays
+type completeResponse struct {
+	XMLName xml.Name `xml:"getCountryResponse"`
+	Country Pays     `xml:"country" json:"country"`
+}
+
+// Pays objet décrivant un pays
 type Pays struct {
 	Name       string `xml:"name" json:"name"`
 	Population string `xml:"population" json:"population"`
@@ -77,65 +111,66 @@ type Pays struct {
 
 // GetCountryEndpoint endpoint pour retourner un pays
 func GetCountryEndpoint(w http.ResponseWriter, req *http.Request) {
+	// récupération des paramèters de l'URL
 	params := mux.Vars(req)
-	soapResponse := queryCountry(params["id"])
 
-	jsonData, err := json.Marshal(soapResponse.Body)
-	if err != nil {
-		panic(err)
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(jsonData)
-
-	// json.NewEncoder(w).Encode(soapResponse)
+	// appel et récupération depuis le WS SOAP
+	queryCountry(params["id"], w)
 }
 
-func queryCountry(country string) *http.Response {
+func queryCountry(country string, w http.ResponseWriter) {
+
+	// création de la requête du WS SOAP
 	url := "http://localhost:8080/ws"
 	client := &http.Client{}
-	sRequestContent := generateRequestContent(country)
-	// fmt.Printf(sRequestContent)
-	requestContent := []byte(sRequestContent)
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(requestContent))
+	stringRequestContent := generateRequestContent(country)
+	bytesRequestContent := []byte(stringRequestContent)
+	request, err := http.NewRequest("POST", url, bytes.NewBuffer(bytesRequestContent))
 	if err != nil {
 		println(&err)
 	}
+	request.Header.Add("Content-Type", "text/xml")
 
-	// req.Header.Add("SOAPAction", `" golang"`)
-	req.Header.Add("Content-Type", "text/xml")
-	resp, err := client.Do(req)
+	// récupération de la réponse
+	response, err := client.Do(request)
 	if err != nil {
 		println(err)
 	}
-
-	defer resp.Body.Close()
-	if resp.StatusCode != 200 {
-		println("Error Response " + resp.Status)
+	if response.StatusCode != 200 {
+		println("Error Response " + response.Status)
 	}
 
-	// print de la réponse
-	buf := new(bytes.Buffer)
-	buf.ReadFrom(resp.Body)
-	newStr := buf.String()
-	fmt.Printf(newStr)
+	// http.response -> string
+	bufferResponse := new(bytes.Buffer)
+	bufferResponse.ReadFrom(response.Body)
+	stringResponse := bufferResponse.String()
+	fmt.Println(stringResponse)
 
-	return resp
+	// string -> struct
+	enveloppe := &MyRespEnvelope{}
+	var bytesResponse = []byte(stringResponse)
+	err = xml.Unmarshal(bytesResponse, enveloppe)
+	if err != nil {
+		fmt.Println(err)
+	} else {
+		fmt.Println(enveloppe)
+	}
+
+	// écriture de la réponse en json
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(enveloppe.Body.GetResponse.Country)
+
+	defer response.Body.Close()
 }
 
 // generateRequestContent générer une requête SOAP au format String
 func generateRequestContent(country string) string {
-	type QueryData struct {
-		Country string
-	}
-	const getTemplate = `<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"
-				  xmlns:gs="http://spring.io/guides/gs-producing-web-service">
-   <soapenv:Header/>	
-   <soapenv:Body>
-      <gs:getCountryRequest>
-         <gs:name>{{.Country}}</gs:name>
-      </gs:getCountryRequest>
-   </soapenv:Body>
-</soapenv:Envelope>`
+
+	// template de l'enveloppe SOAP
+	const getTemplate = `<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:gs="http://spring.io/guides/gs-producing-web-service">
+	<soapenv:Header/><soapenv:Body><gs:getCountryRequest><gs:name>{{.Country}}</gs:name></gs:getCountryRequest></soapenv:Body></soapenv:Envelope>`
+
+	// changement de paramètre en fonction de ce qui a été envoyé dans l'URL
 	querydata := QueryData{Country: country}
 	tmpl, err := template.New("getCoutry").Parse(getTemplate)
 	if err != nil {
@@ -146,6 +181,7 @@ func generateRequestContent(country string) string {
 	if err != nil {
 		panic(err)
 	}
+
 	return doc.String()
 }
 
@@ -166,10 +202,8 @@ func main() {
 	router.HandleFunc("/personnes/{id}", GetPersonneEndpoint).Methods("GET")
 	router.HandleFunc("/personnes/{id}", CreatePersonneEndpoint).Methods("POST")
 	router.HandleFunc("/personnes/{id}", DeletePersonneEndpoint).Methods("DELETE")
-
 	router.HandleFunc("/country/{id}", GetCountryEndpoint).Methods("GET")
 
 	// démarrage du server
 	log.Fatal(http.ListenAndServe(":12345", router))
-
 }
