@@ -1,6 +1,4 @@
 # My Golang Rest API
-===================
-
 
 Simple program to train myself to use Golang : https://golang.org/
 
