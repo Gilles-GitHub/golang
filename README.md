@@ -32,6 +32,7 @@ Run the Springboot jar
 
 Run the main go
 > go get sessiontechniquegolang.go
+
 > go run sessiontechniquegolang.go
 
 Launch a request (with Postman for example) and you're good to go !!
