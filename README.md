@@ -14,7 +14,7 @@ It handles a JSON request then query a Springboot SOAP WS to return a country in
 
 > GET http://localhost:12345/country/Spain will return
 > 
-```json
+```javascript
 {
     "name": "Spain",
     "population": "46704314",
