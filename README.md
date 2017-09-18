@@ -14,7 +14,7 @@ It handles a JSON request then query a Springboot SOAP WS to return a country in
 
 > GET http://localhost:12345/country/Spain will return
 > 
-```javascript
+```json
 {
     "name": "Spain",
     "population": "46704314",
@@ -28,11 +28,14 @@ How to start
 -------------
 
 Run the Springboot jar
-> java -jar gs-producing-web-service-0.1.0.jar
+```bash
+java -jar gs-producing-web-service-0.1.0.jar
+```
 
 Run the main go
-> go get sessiontechniquegolang.go
-
-> go run sessiontechniquegolang.go
+```bash
+go get sessiontechniquegolang.go
+go run sessiontechniquegolang.go
+```
 
 Launch a request (with Postman for example) and you're good to go !!
