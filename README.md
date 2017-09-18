@@ -9,7 +9,7 @@ Documents
 -------------
 
 It handles a JSON request then query a Springboot SOAP WS to return a country informations as JSON.
-----------
+
 > **Example:**
 
 > GET http://localhost:12345/country/Spain will return
