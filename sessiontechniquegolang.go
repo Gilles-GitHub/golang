@@ -190,12 +190,12 @@ func main() {
 
 	// initialisation des personnes de la liste
 	gens = append(gens, Personne{ID: "1", Prenom: "Ryan", Nom: "Gosling", Addresse: &Addresse{Ville: "Los Angeles", Pays: "Etats-Unis"}})
-	gens = append(gens, Personne{ID: "2", Prenom: "Sébastien", Nom: "Barbara"})
-	gens = append(gens, Personne{ID: "3", Prenom: "Lucas", Nom: "Bowler"})
-	gens = append(gens, Personne{ID: "4", Prenom: "Cyril", Nom: "Constant"})
-	gens = append(gens, Personne{ID: "5", Prenom: "Alex", Nom: "Binguy"})
-	gens = append(gens, Personne{ID: "6", Prenom: "Axel", Nom: "Prieur", Addresse: &Addresse{Ville: "Paris", Pays: "France"}})
-	gens = append(gens, Personne{ID: "7", Prenom: "Pascal", Nom: "Spadone", Addresse: &Addresse{Ville: "Nice", Pays: "France"}})
+	gens = append(gens, Personne{ID: "2", Prenom: "Sébastien", Nom: "B"})
+	gens = append(gens, Personne{ID: "3", Prenom: "Lucas", Nom: "B"})
+	gens = append(gens, Personne{ID: "4", Prenom: "Cyril", Nom: "C"})
+	gens = append(gens, Personne{ID: "5", Prenom: "Alex", Nom: "B"})
+	gens = append(gens, Personne{ID: "6", Prenom: "Axel", Nom: "P", Addresse: &Addresse{Ville: "Paris", Pays: "France"}})
+	gens = append(gens, Personne{ID: "7", Prenom: "Pascal", Nom: "S", Addresse: &Addresse{Ville: "Nice", Pays: "France"}})
 
 	// routage des appels vers les endpoints correspondants
 	router.HandleFunc("/personnes", GetGensEndpoint).Methods("GET")
